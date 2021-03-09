@@ -1,16 +1,10 @@
 package config
 
-import "sync"
-
-type ConfigNotify struct {
-	Watcher
-	Config
-	wg *sync.WaitGroup
-}
+import "fmt"
 
 type Watcher interface {
 	Watch(notifyChan chan *ConfigNotify)
-	Priority() int
+	GetPriority() int
 	SetPriority(priority int)
 	SetWatchErrorFunc(errorFunc WatchErrorFunc)
 	Stop()
@@ -19,14 +13,8 @@ type Watcher interface {
 // WatchErrorFunc 监听出现错误的函数,用户自己定义
 type WatchErrorFunc func(err error)
 
-// OnConfigChangeFunc 配置更新后,用于重新加载资源,用户可以自定义
-type OnConfigChangeFunc func(Config) error
-
-type Listener interface {
-	OnConfigChange(cfg Config, sections ...string)
-}
-
-type listenerManager struct {
-	Sections []string
-	Listener
+// 默认的监听错误报错
+func DefaultWatchError(err error) {
+	fmt.Println("xconfig watch error:", err)
+	return
 }
