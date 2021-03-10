@@ -1,7 +1,6 @@
 package config
 
 import (
-	"Uarealoser/pocket/config/file"
 	"Uarealoser/pocket/config/ini"
 	"fmt"
 	"sync"
@@ -18,7 +17,6 @@ type ConfigManagerInterface interface {
 	RemoveConfigListener(l Listener) bool
 	Merge(config Config, watcher Watcher)
 	Close()
-	WatchJob()
 }
 
 type configManager struct {
@@ -34,22 +32,22 @@ type configManager struct {
 
 	WatchError WatchErrorFunc
 
-	// 监听到配置后，出发更新
+	// 监听到配置后，发出更新
 	listenerList []*listenerManager
 }
 
-func NewconfigManager() (cm ConfigManagerInterface) {
-	cm = &configManager{
+func NewconfigManager() ConfigManagerInterface {
+	cm := &configManager{
 		Watchers:        make([]Watcher, 0),
 		notifyChan:      make(chan *ConfigNotify, 1),
 		sectionPriority: make(map[string]int),
 	}
-	go cm.WatchJob()
-	return
+	go cm.watch()
+	return cm
 }
 
 // 监听事件
-func (cm *configManager) WatchJob() {
+func (cm *configManager) watch() {
 	for {
 		notify, ok := <-cm.notifyChan
 		if !ok {
@@ -100,7 +98,7 @@ func (cm *configManager) GetCfg() (cfg Config, err error) {
 func (cm *configManager) WatchFile(path string, priority ...int) error {
 
 	// 注册
-	watcher := &file.FileWatcher{
+	watcher := &FileWatcher{
 		Path:    path,
 		Stopped: false,
 	}

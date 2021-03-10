@@ -1,21 +1,20 @@
-package file
+package config
 
 import (
-	"Uarealoser/pocket/config"
 	"Uarealoser/pocket/config/ini"
 	"os"
 	"sync"
 	"time"
 )
 
-var updateInterval = time.Second * 10
+var updateInterval = time.Second * 3
 
 type FileWatcher struct {
-	config.Watcher
+	Watcher
 	LastModifyTime time.Time
 	Path           string
 	Priority       int
-	WatchErrorFunc config.WatchErrorFunc
+	WatchErrorFunc WatchErrorFunc
 	Stopped        bool
 }
 
@@ -27,7 +26,7 @@ func (f *FileWatcher) GetPriority() int {
 	return f.Priority
 }
 
-func (f *FileWatcher) Init(notifyChan chan *config.ConfigNotify) error {
+func (f *FileWatcher) Init(notifyChan chan *ConfigNotify) error {
 	stat, err := os.Stat(f.Path)
 	if err != nil {
 		return err
@@ -40,13 +39,13 @@ func (f *FileWatcher) Init(notifyChan chan *config.ConfigNotify) error {
 
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
-	notifyChan <- &config.ConfigNotify{Watcher: f, Config: cfg, Wg: wg}
+	notifyChan <- &ConfigNotify{Watcher: f, Config: cfg, Wg: wg}
 	wg.Wait()
 	return nil
 }
 
 // Watch _
-func (f *FileWatcher) Watch(notifyChan chan *config.ConfigNotify) {
+func (f *FileWatcher) Watch(notifyChan chan *ConfigNotify) {
 
 	// 监听文件的修改时间
 	for {
@@ -60,7 +59,7 @@ func (f *FileWatcher) Watch(notifyChan chan *config.ConfigNotify) {
 			if f.WatchErrorFunc != nil {
 				f.WatchErrorFunc(err)
 			} else {
-				config.DefaultWatchError(err)
+				DefaultWatchError(err)
 			}
 			continue
 		}
@@ -69,24 +68,24 @@ func (f *FileWatcher) Watch(notifyChan chan *config.ConfigNotify) {
 		if !f.LastModifyTime.Equal(stat.ModTime()) {
 			cfg, err := f.read()
 			if err == nil {
-				notifyChan <- &config.ConfigNotify{Watcher: f, Config: cfg}
+				notifyChan <- &ConfigNotify{Watcher: f, Config: cfg}
 				f.LastModifyTime = stat.ModTime()
 			} else {
 				if f.WatchErrorFunc != nil {
 					f.WatchErrorFunc(err)
 				} else {
-					config.DefaultWatchError(err)
+					DefaultWatchError(err)
 				}
 			}
 		}
 	}
 }
 
-func (f *FileWatcher) read() (config.Config, error) {
+func (f *FileWatcher) read() (Config, error) {
 	return ini.NewIniConfigFromFile(f.Path)
 }
 
-func (f *FileWatcher) SetWatchErrorFunc(errorFunc config.WatchErrorFunc) {
+func (f *FileWatcher) SetWatchErrorFunc(errorFunc WatchErrorFunc) {
 	f.WatchErrorFunc = errorFunc
 }
 

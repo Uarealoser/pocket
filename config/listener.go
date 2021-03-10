@@ -6,7 +6,7 @@ type Listener interface {
 
 type listenerManager struct {
 	Listener
-	Sections []string
+	Sections []string // 以section为粒度，进行监听
 }
 
 // OnConfigChangeFunc 配置更新后,用于重新加载资源,用户可以自定义
